@@ -67,12 +67,32 @@ async function decodeWithVariousMethods(text: string): Promise<DecodingResult[]>
                 (_, p1) => String.fromCodePoint(parseInt(p1, 16)))
         });
 
+        // Python style \xXX バイト列のデコード
+        try {
+            const pythonStyleResult = decodePythonStyleBytes(text);
+            if (pythonStyleResult !== text) {
+                results.push({
+                    method: 'Python Style Bytes (\\xXX)',
+                    result: pythonStyleResult
+                });
+            }
+        } catch (e) {
+            // デコードに失敗しても続行
+        }
+
         // UTF-8 バイト列のデコード
-				const utf8Result = decodeUTF8Bytes(text);
-				results.push({
-						method: 'UTF-8 Bytes',
-						result: utf8Result
-				});
+        try {
+            const utf8Result = decodeUTF8Bytes(text);
+            if (utf8Result !== text) {
+                results.push({
+                    method: 'UTF-8 Bytes',
+                    result: utf8Result
+                });
+            }
+        } catch (e) {
+            // デコードに失敗しても続行
+        }
+        
     } catch (error) {
         // エラーが発生しても処理を継続
     }
@@ -80,8 +100,37 @@ async function decodeWithVariousMethods(text: string): Promise<DecodingResult[]>
     return results;
 }
 
-function decodeUTF8Bytes(text: string): string {
-    const pattern = /(?:\\[ux]?|u\+)((?:[0-9a-f][0-9a-f]){1,4})/gi;
+function decodePythonStyleBytes(text: string): string {
+    const pattern = /\\x([0-9a-f]{2})/gi;
+    const bytes: number[] = [];
+    
+    // 文字列から16進数のバイト列を抽出
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+        bytes.push(parseInt(match[1], 16));
+    }
+    
+    // バイトが見つからない場合は元の文字列を返す
+    if (bytes.length === 0) {
+        return text;
+    }
+
+    // バイト列をUint8Arrayに変換
+    const byteArray = new Uint8Array(bytes);
+    
+    try {
+        // TextDecoderを使用してUTF-8からデコード
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(byteArray);
+    } catch (e) {
+        // デコードに失敗した場合は元の文字列を返す
+        return text;
+    }
+}
+
+export function decodeUTF8Bytes(text: string): string {
+    // パターンから \xXX を除外
+    const pattern = /(?:\\[u]?|u\+)((?:[0-9a-f][0-9a-f]){1,4})/gi;
     
     // パターンにマッチしない場合は、スペース区切りの16進数として処理
     if (!pattern.test(text)) {

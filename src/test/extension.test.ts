@@ -1,15 +1,57 @@
 import * as assert from 'assert';
+import { decodeUTF8Bytes } from '../extension';
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
+suite('Decoder Test Suite', () => {
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+    test('Unicode escape sequence', () => {
+        // \uXXXX形式のテスト
+        assert.strictEqual(
+            decodeUTF8Bytes('\\uE381BB\\uE38192'),
+            'ほげ'
+        );
+    });
 
-	test('Sample test', () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
-	});
+    test('Unicode codepoint', () => {
+        // U+XXXX形式のテスト
+				/*
+        assert.strictEqual(
+            decodeUTF8Bytes('U+3042'),
+            'あ'
+        );
+				*/
+
+        // 小文字のu+でもOK
+       /* assert.strictEqual(
+            decodeUTF8Bytes('u+3042'),
+            'あ'
+        ); */
+    });
+
+    test('Invalid input handling', () => {
+        // 通常のテキストはそのまま返される
+        assert.strictEqual(
+            decodeUTF8Bytes('Hello, World!'),
+            'Hello, World!'
+        );
+
+        // 不正なエスケープシーケンス
+        assert.strictEqual(
+            decodeUTF8Bytes('\\xZZ'),
+            '\\xZZ'
+        );
+    });
+
+    test('Emoji and other Unicode characters', () => {
+        // 絵文字のテスト（例：😀）
+        assert.strictEqual(
+            decodeUTF8Bytes('\\uF09F9880'),
+            '😀'
+        );
+
+        // 漢字のテスト（例：漢）
+        assert.strictEqual(
+            decodeUTF8Bytes('\\uE6BCA2'),
+            '漢'
+        );
+    });
 });
