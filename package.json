@@ -14,10 +14,19 @@
   "contributes": {
     "commands": [
       {
-        "command": "strconv.helloWorld",
-        "title": "Hello World"
+        "command": "strconv.decodeString",
+        "title": "文字列をデコード"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "strconv.decodeString",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
